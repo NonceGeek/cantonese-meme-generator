@@ -5,8 +5,8 @@ import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
-  title: "ETH GuangZhou（粤）",
-  description: "– Let’s buidl c00l dApps that people actually use.",
+  title: "粤语梗图生成器",
+  description: "Cantonese Meme Generator",
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {

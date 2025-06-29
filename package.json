@@ -59,7 +59,11 @@
     "node": ">=20.18.3"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "radix-ui": "^1.4.2",
     "react-markdown": "^10.1.0",
+    "tailwind-merge": "^3.3.1",
     "vercel": "^41.7.6"
   }
 }
