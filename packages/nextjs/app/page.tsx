@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -145,10 +145,14 @@ export default function Home() {
   // Drag state
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  
+
   // Modal state for generated meme
   const [showMemeModal, setShowMemeModal] = useState(false);
   const [generatedMemeUrl, setGeneratedMemeUrl] = useState<string | null>(null);
+
+  // Modal state for Arweave image loading
+  const [showArweaveModal, setShowArweaveModal] = useState(false);
+  const [arweaveId, setArweaveId] = useState("MMvC6uvJySsxo7p7peL3IoenhgJF3wwYSR2YVpSQi_M");
 
   const imageRef = useRef<HTMLImageElement>(null);
   const memeContainerRef = useRef<HTMLDivElement>(null);
@@ -163,17 +167,17 @@ export default function Home() {
 
     try {
       // Create an iframe to completely isolate the rendering context
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      iframe.style.width = '800px';
-      iframe.style.height = '600px';
-      iframe.style.border = 'none';
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.left = "-9999px";
+      iframe.style.top = "-9999px";
+      iframe.style.width = "800px";
+      iframe.style.height = "600px";
+      iframe.style.border = "none";
       document.body.appendChild(iframe);
 
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) throw new Error('Cannot access iframe document');
+      if (!iframeDoc) throw new Error("Cannot access iframe document");
 
       // Create minimal HTML structure in iframe
       iframeDoc.open();
@@ -210,35 +214,36 @@ export default function Home() {
       iframeDoc.close();
 
       // Wait for image to load
-      const img = iframeDoc.querySelector('.meme-img') as HTMLImageElement;
-      const container = iframeDoc.querySelector('.container') as HTMLElement;
-      
+      const img = iframeDoc.querySelector(".meme-img") as HTMLImageElement;
+      const container = iframeDoc.querySelector(".container") as HTMLElement;
+
       await new Promise((resolve, reject) => {
         if (img.complete) {
           resolve(true);
         } else {
           img.onload = () => resolve(true);
-          img.onerror = () => reject(new Error('Image failed to load'));
+          img.onerror = () => reject(new Error("Image failed to load"));
           // Timeout after 10 seconds
-          setTimeout(() => reject(new Error('Image load timeout')), 10000);
+          setTimeout(() => reject(new Error("Image load timeout")), 10000);
         }
       });
 
       // Add text elements
       textElements.forEach(element => {
-        const textDiv = iframeDoc.createElement('div');
-        textDiv.className = 'text-element';
+        const textDiv = iframeDoc.createElement("div");
+        textDiv.className = "text-element";
         textDiv.textContent = element.text;
-        textDiv.style.left = '50%';
-        textDiv.style.top = '50%';
+        textDiv.style.left = "50%";
+        textDiv.style.top = "50%";
         textDiv.style.transform = `translate(calc(-50% + ${element.position.x}px), calc(-50% + ${element.position.y}px))`;
         textDiv.style.color = element.color;
-        textDiv.style.fontSize = element.fontSize + 'px';
-        textDiv.style.whiteSpace = element.text.length <= 15 ? 'nowrap' : 'normal';
-        textDiv.style.wordBreak = element.text.length > 15 ? 'break-word' : 'normal';
-        textDiv.style.textShadow = element.color === 'white' 
-          ? '2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black'
-          : '2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white';
+        textDiv.style.fontSize = element.fontSize + "px";
+        textDiv.style.whiteSpace = element.text.length <= 15 ? "nowrap" : "normal";
+        textDiv.style.wordBreak = element.text.length > 15 ? "break-word" : "normal";
+        textDiv.style.textShadow =
+          element.color === "white"
+            ? "2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black"
+            : "2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white";
         container.appendChild(textDiv);
       });
 
@@ -260,17 +265,16 @@ export default function Home() {
       document.body.removeChild(iframe);
 
       // Convert canvas to blob and create URL
-      canvas.toBlob((blob) => {
+      canvas.toBlob(blob => {
         if (blob) {
           const url = URL.createObjectURL(blob);
           setGeneratedMemeUrl(url);
           setShowMemeModal(true);
         }
-      }, 'image/png');
-
+      }, "image/png");
     } catch (error) {
-      console.error('Error generating meme:', error);
-      alert('生成梗图时出错，请重试！');
+      console.error("Error generating meme:", error);
+      alert("生成梗图时出错，请重试！");
       // Clean up iframe in case of error
       const iframe = document.querySelector('iframe[style*="-9999px"]');
       if (iframe) {
@@ -319,8 +323,8 @@ export default function Home() {
 
   const downloadMeme = () => {
     if (!generatedMemeUrl) return;
-    
-    const link = document.createElement('a');
+
+    const link = document.createElement("a");
     link.href = generatedMemeUrl;
     link.download = `粤语梗图_${selectedTemplate.name}_${Date.now()}.png`;
     document.body.appendChild(link);
@@ -335,6 +339,82 @@ export default function Home() {
       setGeneratedMemeUrl(null);
     }
   };
+
+  const loadPicFromArweave = () => {
+    setShowArweaveModal(true);
+  };
+
+  const closeArweaveModal = () => {
+    setShowArweaveModal(false);
+    setArweaveId("MMvC6uvJySsxo7p7peL3IoenhgJF3wwYSR2YVpSQi_M");
+  };
+
+  const loadArweaveImage = useCallback(
+    async (urlArId?: string) => {
+      const idToUse = urlArId || arweaveId.trim();
+
+      if (!idToUse) {
+        alert("请输入有效的 Arweave ID");
+        return;
+      }
+
+      try {
+        // Create Arweave URL
+        const arweaveUrl = `https://arweave.net/${idToUse}`;
+
+        // Test if the image loads successfully
+        const testImage = new Image();
+        await new Promise((resolve, reject) => {
+          testImage.onload = resolve;
+          testImage.onerror = reject;
+          testImage.src = arweaveUrl;
+        });
+
+        // Create a new template from the Arweave image
+        const newTemplate = {
+          id: Date.now(), // Use timestamp as unique ID
+          name: `讲D乜？`,
+          image: arweaveUrl,
+          active: true,
+          defaultTexts: [],
+        };
+
+        // Set as selected template and clear text elements
+        setSelectedTemplate(newTemplate);
+        setTextElements([]);
+
+        // Close modal if it was opened manually
+        if (!urlArId) {
+          closeArweaveModal();
+        }
+
+        // Update arweaveId state if loaded from URL
+        if (urlArId) {
+          setArweaveId(urlArId);
+        }
+      } catch (error) {
+        console.error("Error loading Arweave image:", error);
+        alert("无法加载该 Arweave 图片，请检查 ID 是否正确");
+      }
+    },
+    [arweaveId],
+  );
+
+  // Check for ar_id URL parameter on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const arId = urlParams.get("ar_id");
+
+    if (arId) {
+      // Load the Arweave image automatically
+      loadArweaveImage(arId);
+
+      // Clean up URL parameter
+      const url = new URL(window.location.href);
+      url.searchParams.delete("ar_id");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [loadArweaveImage]);
 
   // Drag handlers
   const handleTextMouseDown = useCallback(
@@ -414,6 +494,12 @@ export default function Home() {
           >
             随机一张
           </div>
+          <div
+            className="flex-shrink-0 w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center cursor-pointer text-black text-xs hover:bg-gray-100 transition-colors"
+            onClick={loadPicFromArweave}
+          >
+            Load 自 AR
+          </div>
         </div>
       </div>
 
@@ -461,9 +547,10 @@ export default function Home() {
                       fontFamily: "system-ui, -apple-system, sans-serif",
                       whiteSpace: element.text.length <= 15 ? "nowrap" : "normal",
                       wordBreak: element.text.length > 15 ? "break-word" : "normal",
-                      textShadow: element.color === 'white' 
-                        ? '2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black, 0px 2px 0px black, 2px 0px 0px black, 0px -2px 0px black, -2px 0px 0px black'
-                        : '2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white, 0px 2px 0px white, 2px 0px 0px white, 0px -2px 0px white, -2px 0px 0px white',
+                      textShadow:
+                        element.color === "white"
+                          ? "2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black, 0px 2px 0px black, 2px 0px 0px black, 0px -2px 0px black, -2px 0px 0px black"
+                          : "2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white, 0px 2px 0px white, 2px 0px 0px white, 0px -2px 0px white, -2px 0px 0px white",
                     }}
                   >
                     {element.text}
@@ -778,14 +865,11 @@ export default function Home() {
           <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-screen overflow-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-black">梗图生成完成！</h3>
-              <button
-                onClick={closeMemeModal}
-                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-              >
+              <button onClick={closeMemeModal} className="text-gray-500 hover:text-gray-700 text-xl font-bold">
                 ×
               </button>
             </div>
-            
+
             <div className="text-center mb-4">
               <img
                 src={generatedMemeUrl}
@@ -793,13 +877,54 @@ export default function Home() {
                 className="max-w-full h-auto rounded shadow-lg mx-auto"
               />
             </div>
-            
+
             <div className="flex gap-3 justify-center">
-              <Button
-                onClick={downloadMeme}
-                className="bg-green-500 hover:bg-green-600 text-white px-6"
-              >
+              <Button onClick={downloadMeme} className="bg-green-500 hover:bg-green-600 text-white px-6">
                 下载梗图
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Arweave Image Loading Modal */}
+      {showArweaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-black">从 Arweave 加载图片</h3>
+              <button onClick={closeArweaveModal} className="text-gray-500 hover:text-gray-700 text-xl font-bold">
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Arweave ID:</label>
+              <Input
+                type="text"
+                placeholder="请输入 Arweave ID"
+                value={arweaveId}
+                onChange={e => setArweaveId(e.target.value)}
+                className="w-full"
+                onKeyPress={e => {
+                  if (e.key === "Enter") {
+                    loadArweaveImage();
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500 mt-1">图片将从 https://arweave.net/[your-id] 加载</p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={closeArweaveModal} className="px-4 text-black">
+                取消
+              </Button>
+              <Button
+                onClick={() => loadArweaveImage()}
+                disabled={!arweaveId.trim()}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6"
+              >
+                加载图片
               </Button>
             </div>
           </div>

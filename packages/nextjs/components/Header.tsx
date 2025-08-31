@@ -22,8 +22,16 @@ export const menuLinks: HeaderMenuLink[] = [
     href: "/",
   },
   {
+    label: "梗圖模板展览馆",
+    href: "/gallery",
+  },
+  {
+    label: "上載圖片去 Arweave",
+    href: "https://up2ar.xyz/",
+  },
+  {
     label: "访问原版",
-    href: "https://x.magiconch.com/"
+    href: "https://x.magiconch.com/",
   },
   // {
   //   label: "Debug Contracts",
@@ -51,7 +59,12 @@ export const HeaderMenuLinks = () => {
               <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-52 !top-[100%] !mt-0 !pt-0 !-translate-y-1">
                 {subItems.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="py-2 hover:bg-base-300">
+                    <Link 
+                      href={item.href} 
+                      target={item.href.startsWith('http') ? "_blank" : undefined}
+                      rel={item.href.startsWith('http') ? "noopener noreferrer" : undefined}
+                      className="py-2 hover:bg-base-300"
+                    >
                       {item.label}
                     </Link>
                   </li>
@@ -66,6 +79,8 @@ export const HeaderMenuLinks = () => {
             <Link
               href={href}
               passHref
+              target={href.startsWith('http') ? "_blank" : undefined}
+              rel={href.startsWith('http') ? "noopener noreferrer" : undefined}
               className={`${
                 isActive ? "bg-secondary shadow-md" : ""
               } hover:bg-secondary hover:shadow-md focus:!bg-secondary active:!text-neutral py-1.5 px-3 text-sm rounded-full gap-2 grid grid-flow-col`}
